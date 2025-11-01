@@ -140,7 +140,6 @@ export default function Home({
       'west singhbum': 'West Singhbhum',
       'pashchim singhbhum': 'West Singhbhum',
       'SARAIKELA KHARSAWAN': 'Seraikela Kharsawan',
-      'SARAIKELA KHARSAWAN': 'Seraikela Kharsawan',
       'dhanbad': 'Dhanbad',
       'bokaro': 'Bokaro',
       'jamshedpur': 'East Singhbhum', // Jamshedpur is in East Singhbhum
