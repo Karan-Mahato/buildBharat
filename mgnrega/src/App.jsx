@@ -46,7 +46,7 @@ export default function App() {
     str.replace(/\b\w/g, (c) => c.toUpperCase()).trim();
 
   useEffect(() => {
-    fetch("./public/data/state_districts.json")
+    fetch("/data/state_districts.json")
       .then((res) => res.json())
       .then(setStatesData)
       .catch(() => console.error("Failed to load state-district data"));
