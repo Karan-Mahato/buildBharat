@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model DistrictData {
+  id            Int      @id @default(autoincrement())
+  district_name String   @unique
+  district_code String?
+  data          Json
+  last_updated  DateTime @default(now())
+}
+
+model SyncLog {
+  id         Int       @id @default(autoincrement())
+  status     String    @default("pending")
+  start_time DateTime  @default(now())
+  end_time   DateTime?
+  records    Int       @default(0)
+  error      String?
+}
