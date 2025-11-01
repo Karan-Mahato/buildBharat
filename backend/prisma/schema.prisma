@@ -9,9 +9,8 @@ datasource db {
 }
 
 model DistrictData {
-  id            Int      @id @default(autoincrement())
-  district_name String   @unique
-  district_code String?
+  district_name String   @id
+  district_code String?  
   data          Json
   last_updated  DateTime @default(now())
 }
