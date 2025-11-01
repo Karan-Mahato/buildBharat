@@ -12,7 +12,9 @@ export const detectLocation = async()=>{
             
             // Use backend proxy to avoid CORS issues with Nominatim from the browser.
             // Backend runs on port 5000 by default in this project.
-            const backendOrigin =import.meta.env.VITE_API_BASE_URl || "http://localhost:5000";
+            const backendOrigin =import.meta.env.VITE_API_BASE_URl || (window.location.hostname === "localhost"
+                ? "http://localhost:5000"
+                : "https://buildbharat.onrender.com");
             const geoRes = await fetch(
                 `${backendOrigin}/api/reverse-geocode?lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}`,
                 { cache: "no-store" }
