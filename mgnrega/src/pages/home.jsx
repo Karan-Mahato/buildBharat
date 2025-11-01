@@ -265,7 +265,9 @@ export default function Home({
       let detected;
       try {
         // Use backend proxy to avoid CORS issues
-        const backendOrigin = `${window.location.protocol}//${window.location.hostname}:5000`;
+        const backendOrigin =import.meta.env.VITE_API_BASE_URl || (window.location.hostname === "localhost"
+            ? "http://localhost:5000"
+            : "https://buildbharat.onrender.com");
         const geoRes = await fetch(
           `${backendOrigin}/api/reverse-geocode?lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}`,
           { cache: "no-store" }
