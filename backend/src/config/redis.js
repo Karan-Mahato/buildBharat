@@ -2,12 +2,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// If REDIS is not configured or we want to disable it for local dev,
-// export a lightweight in-memory shim that provides the same async API
-// used by the rest of the code (get, set, ping, on, connect).
-
-// Use explicit flag REDIS_ENABLED to opt-in to real Redis. This lets us keep
-// REDIS_* values in .env but disable the real connection during local dev.
 const isRedisConfigured = process.env.REDIS_ENABLED === 'true' && (!!process.env.REDIS_HOST || !!process.env.REDIS_URL);
 
 if (isRedisConfigured) {

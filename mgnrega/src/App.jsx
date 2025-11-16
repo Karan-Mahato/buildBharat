@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAutoLocation } from "./hooks/useAutoLocation";
 import { checkHealth } from "./api/healthAPI";
+import { fetchAllStates, fetchDistrictsByState } from "./api/districtAPI";
 import { useTranslation } from "react-i18next";
 import Dashboard from "./pages/dashboard";
 import Home from "./pages/home";
@@ -45,12 +46,40 @@ export default function App() {
   const capitalizeWords = (str) =>
     str.replace(/\b\w/g, (c) => c.toUpperCase()).trim();
 
+  // Load state list from backend (multi-state). Lazy-load districts per-state when selected.
   useEffect(() => {
-    fetch("/data/states_districts.json")
-      .then((res) => res.json())
-      .then(setStatesData)
-      .catch(() => console.error("Failed to load state-district data"));
+    (async () => {
+      try {
+        const states = await fetchAllStates();
+        // initialize mapping with empty arrays; districts will be loaded on demand
+        const map = {};
+        states.forEach((s) => (map[s] = []));
+        setStatesData(map);
+      } catch (err) {
+        console.warn("Failed to fetch states from backend - falling back to local file", err);
+        // fallback to bundled JSON for offline / dev mode
+        fetch("/data/states_districts.json")
+          .then((res) => res.json())
+          .then(setStatesData)
+          .catch(() => console.error("Failed to load state-district data"));
+      }
+    })();
   }, []);
+
+  // When user selects a state, fetch its districts if we don't already have them
+  useEffect(() => {
+    if (!selectedState) return;
+    if (statesData[selectedState] && statesData[selectedState].length) return;
+
+    (async () => {
+      try {
+        const districts = await fetchDistrictsByState(selectedState);
+        setStatesData((prev) => ({ ...prev, [selectedState]: districts }));
+      } catch (err) {
+        console.error("Failed to fetch districts for state", selectedState, err);
+      }
+    })();
+  }, [selectedState]);
 
   useEffect(() => {
     (async () => {

@@ -3,6 +3,9 @@
 export function transformDistrictData(apiData, districtName, stateName) {
   if (!apiData) return null;
 
+  // Extract the actual metrics from the nested data property
+  const metricsData = apiData.data || apiData;
+
   const calculateStatus = (data) => {
     const completionRate = data.Number_of_Completed_Works && data.Total_No_of_Works_Takenup
       ? (parseInt(data.Number_of_Completed_Works) / parseInt(data.Total_No_of_Works_Takenup)) * 100
@@ -22,22 +25,22 @@ export function transformDistrictData(apiData, districtName, stateName) {
     return 'neutral';
   };
 
-  const status = calculateStatus(apiData);
-  const avgWage = parseFloat(apiData.Average_Wage_rate_per_day_per_person || 0);
-  const timelyPayment = parseFloat(apiData.percentage_payments_gererated_within_15_days || 0);
+  const status = calculateStatus(metricsData);
+  const avgWage = parseFloat(metricsData.Average_Wage_rate_per_day_per_person || 0);
+  const timelyPayment = parseFloat(metricsData.percentage_payments_gererated_within_15_days || 0);
 
   return {
     name: { en: districtName, hi: districtName },
     lastUpdated: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
     month: { 
-      en: apiData.month || new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
-      hi: apiData.month || new Date().toLocaleDateString('hi-IN', { month: 'long', year: 'numeric' })
+      en: metricsData.month || new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
+      hi: metricsData.month || new Date().toLocaleDateString('hi-IN', { month: 'long', year: 'numeric' })
     },
     status,
     topTrends: [
       { 
         label: { en: "Employment", hi: "रोज़गार" }, 
-        trend: getTrend(apiData.Total_No_of_Workers, 100000) 
+        trend: getTrend(metricsData.Total_No_of_Workers, 100000) 
       },
       { 
         label: { en: "Wages", hi: "मज़दूरी" }, 
@@ -45,7 +48,7 @@ export function transformDistrictData(apiData, districtName, stateName) {
       },
       { 
         label: { en: "Women Participation", hi: "महिला भागीदारी" }, 
-        trend: getTrend(apiData.Women_Persondays, 500000) 
+        trend: getTrend(metricsData.Women_Persondays, 500000) 
       }
     ],
     categories: {
@@ -54,8 +57,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'avgDays',
           nameEn: 'Avg Work Days',
           nameHi: 'औसत काम के दिन',
-          value: parseInt(apiData.Average_days_of_employment_provided_per_Household || 0),
-          trend: getTrend(apiData.Average_days_of_employment_provided_per_Household, 40),
+          value: parseInt(metricsData.Average_days_of_employment_provided_per_Household || 0),
+          trend: getTrend(metricsData.Average_days_of_employment_provided_per_Household, 40),
           change: `+${Math.round(Math.random() * 8)}`,
           icon: '📅'
         },
@@ -63,8 +66,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'families',
           nameEn: 'Families Worked',
           nameHi: 'परिवारों ने काम किया',
-          value: formatNumber(apiData.Total_Households_Worked),
-          trend: getTrend(apiData.Total_Households_Worked, 50000),
+          value: formatNumber(metricsData.Total_Households_Worked),
+          trend: getTrend(metricsData.Total_Households_Worked, 50000),
           change: '+12%',
           icon: '👨‍👩‍👧‍👦'
         },
@@ -72,8 +75,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'hundredDays',
           nameEn: '100-Day Families',
           nameHi: '100 दिन पूरा',
-          value: `${calculatePercentage(apiData.Total_No_of_HHs_completed_100_Days_of_Wage_Employment, apiData.Total_Households_Worked)}%`,
-          trend: getTrend(apiData.Total_No_of_HHs_completed_100_Days_of_Wage_Employment, 1000),
+          value: `${calculatePercentage(metricsData.Total_No_of_HHs_completed_100_Days_of_Wage_Employment, metricsData.Total_Households_Worked)}%`,
+          trend: getTrend(metricsData.Total_No_of_HHs_completed_100_Days_of_Wage_Employment, 1000),
           change: '+2%',
           icon: '✅'
         }
@@ -101,8 +104,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'totalWages',
           nameEn: 'Total Wages Paid',
           nameHi: 'कुल मज़दूरी खर्च',
-          value: `₹${formatNumber(apiData.Wages)} Cr`,
-          trend: getTrend(apiData.Wages, 5000),
+          value: `₹${formatNumber(metricsData.Wages)} Cr`,
+          trend: getTrend(metricsData.Wages, 5000),
           change: '+15%',
           icon: '💵'
         }
@@ -112,8 +115,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'ongoing',
           nameEn: 'Ongoing Works',
           nameHi: 'चल रहे कार्य',
-          value: formatNumber(apiData.Number_of_Ongoing_Works),
-          trend: getTrend(apiData.Number_of_Ongoing_Works, 30000),
+          value: formatNumber(metricsData.Number_of_Ongoing_Works),
+          trend: getTrend(metricsData.Number_of_Ongoing_Works, 30000),
           change: '+5%',
           icon: '🏗️'
         },
@@ -121,8 +124,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'completed',
           nameEn: 'Completed Works',
           nameHi: 'पूर्ण कार्य',
-          value: formatNumber(apiData.Number_of_Completed_Works),
-          trend: getTrend(apiData.Number_of_Completed_Works, 8000),
+          value: formatNumber(metricsData.Number_of_Completed_Works),
+          trend: getTrend(metricsData.Number_of_Completed_Works, 8000),
           change: '+8%',
           icon: '✅'
         },
@@ -130,8 +133,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'total',
           nameEn: 'Total Works',
           nameHi: 'कुल कार्य',
-          value: formatNumber(apiData.Total_No_of_Works_Takenup),
-          trend: getTrend(apiData.Total_No_of_Works_Takenup, 40000),
+          value: formatNumber(metricsData.Total_No_of_Works_Takenup),
+          trend: getTrend(metricsData.Total_No_of_Works_Takenup, 40000),
           change: '+6%',
           icon: '📋'
         }
@@ -141,8 +144,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'women',
           nameEn: 'Women Participation',
           nameHi: 'महिला भागीदारी',
-          value: `${calculatePercentage(apiData.Women_Persondays, apiData.Total_No_of_Workers)}%`,
-          trend: getTrend(apiData.Women_Persondays, 1000000),
+          value: `${calculatePercentage(metricsData.Women_Persondays, metricsData.Total_No_of_Workers)}%`,
+          trend: getTrend(metricsData.Women_Persondays, 1000000),
           change: '+3%',
           icon: '👩'
         },
@@ -150,8 +153,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'sc',
           nameEn: 'SC Participation',
           nameHi: 'अनुसूचित जाति भागीदारी',
-          value: `${calculatePercentage(apiData.SC_persondays, apiData.Total_No_of_Workers)}%`,
-          trend: getTrend(apiData.SC_persondays, 100000),
+          value: `${calculatePercentage(metricsData.SC_persondays, metricsData.Total_No_of_Workers)}%`,
+          trend: getTrend(metricsData.SC_persondays, 100000),
           change: '+2%',
           icon: '👥'
         },
@@ -159,8 +162,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'st',
           nameEn: 'ST Participation',
           nameHi: 'अनुसूचित जनजाति भागीदारी',
-          value: `${calculatePercentage(apiData.ST_persondays, apiData.Total_No_of_Workers)}%`,
-          trend: getTrend(apiData.ST_persondays, 800000),
+          value: `${calculatePercentage(metricsData.ST_persondays, metricsData.Total_No_of_Workers)}%`,
+          trend: getTrend(metricsData.ST_persondays, 800000),
           change: '+4%',
           icon: '🏞️'
         }
@@ -170,8 +173,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'jobCards',
           nameEn: 'Job Cards Issued',
           nameHi: 'जॉब कार्ड जारी',
-          value: formatNumber(apiData.Total_No_of_JobCards_issued),
-          trend: getTrend(apiData.Total_No_of_JobCards_issued, 300000),
+          value: formatNumber(metricsData.Total_No_of_JobCards_issued),
+          trend: getTrend(metricsData.Total_No_of_JobCards_issued, 300000),
           change: '+2%',
           icon: '🆔'
         },
@@ -179,8 +182,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'activeCards',
           nameEn: 'Active Job Cards',
           nameHi: 'सक्रिय जॉब कार्ड',
-          value: formatNumber(apiData.Total_No_of_Active_Job_Cards),
-          trend: getTrend(apiData.Total_No_of_Active_Job_Cards, 150000),
+          value: formatNumber(metricsData.Total_No_of_Active_Job_Cards),
+          trend: getTrend(metricsData.Total_No_of_Active_Job_Cards, 150000),
           change: '+5%',
           icon: '✅'
         },
@@ -188,8 +191,8 @@ export function transformDistrictData(apiData, districtName, stateName) {
           id: 'activeWorkers',
           nameEn: 'Active Workers',
           nameHi: 'सक्रिय श्रमिक',
-          value: formatNumber(apiData.Total_No_of_Active_Workers),
-          trend: getTrend(apiData.Total_No_of_Active_Workers, 200000),
+          value: formatNumber(metricsData.Total_No_of_Active_Workers),
+          trend: getTrend(metricsData.Total_No_of_Active_Workers, 200000),
           change: '+7%',
           icon: '👷'
         }
@@ -199,17 +202,17 @@ export function transformDistrictData(apiData, districtName, stateName) {
       {
         nameEn: 'Persondays Generated',
         nameHi: 'उत्पन्न व्यक्ति-दिवस',
-        data: generateChartData(apiData.Persondays_of_Central_Liability_so_far),
-        bestMonth: { month: 'Jan', value: formatNumber(apiData.Persondays_of_Central_Liability_so_far), index: 2 }
+        data: generateChartData(metricsData.Persondays_of_Central_Liability_so_far),
+        bestMonth: { month: 'Jan', value: formatNumber(metricsData.Persondays_of_Central_Liability_so_far), index: 2 }
       }
     ],
     comparison: {
       avgWorkDays: { 
-        district: parseInt(apiData.Average_days_of_employment_provided_per_Household || 0),
+        district: parseInt(metricsData.Average_days_of_employment_provided_per_Household || 0),
         state: 45 
       },
       womenPart: { 
-        district: calculatePercentage(apiData.Women_Persondays, apiData.Total_No_of_Workers),
+        district: calculatePercentage(metricsData.Women_Persondays, metricsData.Total_No_of_Workers),
         state: 52 
       },
       timelyPayment: { 

@@ -46,10 +46,12 @@ export default function Dashboard({
   }, []);
 
   useEffect(() => {
-    if (selectedDistrict) {
+    // Only fetch when both state and district are present
+    if (selectedState && selectedDistrict) {
       setLoading(true);
       setError("");
-      fetchDistrictData(selectedDistrict)
+      // Pass both state and district so the API path becomes /api/states/{state}/districts/{district}
+      fetchDistrictData(selectedState, selectedDistrict)
         .then((apiData) => {
           setRawData(apiData);
           const transformed = transformDistrictData(apiData, selectedDistrict, selectedState);

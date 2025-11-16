@@ -1,18 +1,40 @@
 import axios from "axios";
 
-// const API_BASE_URL=import.meta.env.VITE_API_BASE_URl || "http://localhost:5000";
+const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export const axiosinstance = axios.create({
-    baseURL:import.meta.env.VITE_API_BASE_URl || "http://localhost:5000",
+    baseURL,
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 10000,
 });
 
+// Response interceptor with basic retry for transient/network/5xx errors
 axiosinstance.interceptors.response.use(
-    (responce) => responce,
-    (error) => {
-        console.log("API ERROR:", error.responce?.data || error.meddage);
+    (response) => response,
+    async (error) => {
+        const config = error.config;
+        console.log("API ERROR:", error.response?.data || error.message);
+
+        // If there's no config or we've already retried too many times, reject
+        if (!config) return Promise.reject(error);
+
+        config._retry = config._retry || 0;
+
+        const shouldRetry =
+            (!error.response || error.response.status >= 500) ||
+            error.code === 'ECONNABORTED' ||
+            error.message?.includes('Network Error');
+
+        if (shouldRetry && config._retry < 3) {
+            config._retry += 1;
+            // exponential-ish backoff
+            const delay = 300 * config._retry;
+            await new Promise((res) => setTimeout(res, delay));
+            return axiosinstance(config);
+        }
+
         return Promise.reject(error);
     }
 );

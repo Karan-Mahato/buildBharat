@@ -8,12 +8,23 @@ import prisma from './config/prisma.js';
 
 dotenv.config();
 
+// Surface fatal/unhandled errors during startup so they don't fail silently
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception thrown:', err);
+  // Keep process alive for debugging; in production you may want to exit
+});
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 app.get("/",(_,res)=> res.send("MGNREGA Backend is live"));
-app.use("/api/districts", districtRoutes);  // Mount at base path, routes handle params
+// Mount district routes under /api so endpoints like /api/states work with the frontend
+app.use("/api", districtRoutes);
 app.use("/api/reverse-geocode", reverseRoutes);
 
 app.get("/api/health", async (req, res) => {

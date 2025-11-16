@@ -25,23 +25,51 @@ export const normalizeDistrictName = (name) => {
     return cleaned;
 };
 
-// Get list of available districts
-export const fetchAvailableDistricts = async () => {
+// ===== New Multi-State API Functions =====
+
+/**
+ * Fetch all available states
+ * @returns {Promise<string[]>} Array of state names
+ */
+export const fetchAllStates = async () => {
     try {
-        const res = await axiosinstance.get('/api/districts');
+        const res = await axiosinstance.get('/api/states');
         return res.data;
     } catch (error) {
-        console.error("Failed to fetch available districts:", error);
+        console.error("Failed to fetch states:", error);
         return [];
     }
 };
 
-export const fetchDistrictData = async (districtName) => {
+/**
+ * Fetch all districts for a specific state
+ * @param {string} stateName - Name of the state
+ * @returns {Promise<string[]>} Array of district names
+ */
+export const fetchDistrictsByState = async (stateName) => {
+    try {
+        const res = await axiosinstance.get(`/api/states/${encodeURIComponent(stateName)}/districts`);
+        return res.data;
+    } catch (error) {
+        console.error(`Failed to fetch districts for ${stateName}:`, error);
+        return [];
+    }
+};
+
+/**
+ * Fetch detailed data for a specific district in a state
+ * @param {string} stateName - Name of the state
+ * @param {string} districtName - Name of the district
+ * @returns {Promise<Object>} District data object
+ */
+export const fetchDistrictData = async (stateName, districtName) => {
     try {
         const normalizedName = normalizeDistrictName(districtName);
-        console.log(`Fetching district data for: ${normalizedName}`);
+        console.log(`Fetching district data for: ${stateName}/${normalizedName}`);
         
-        const res = await axiosinstance.get(`/api/districts/${encodeURIComponent(normalizedName)}`);
+        const res = await axiosinstance.get(
+            `/api/states/${encodeURIComponent(stateName)}/districts/${encodeURIComponent(normalizedName)}`
+        );
         
         if (!res.data) {
             throw new Error(`No data found for district: ${normalizedName}`);
@@ -49,20 +77,35 @@ export const fetchDistrictData = async (districtName) => {
         console.log(res.data);
         return res.data;
     } catch (error) {
-        // Log the error with available districts if it's a 404
         if (error.response?.status === 404) {
             console.error("District not found:", {
+                state: stateName,
                 requested: districtName,
-                normalized: normalizeDistrictName(districtName),
-                availableDistricts: error.response.data.availableDistricts
+                normalized: normalizeDistrictName(districtName)
             });
         } else {
             console.error("District API Error:", {
+                state: stateName,
                 district: districtName,
-                normalized: normalizeDistrictName(districtName),
                 error: error.response?.data || error.message
             });
         }
-        throw error; // Re-throw to let the component handle it
+        throw error;
+    }
+};
+
+// ===== Legacy API Functions (Backward Compatibility) =====
+
+/**
+ * @deprecated Use fetchAllStates() instead
+ * Get list of available districts (legacy endpoint)
+ */
+export const fetchAvailableDistricts = async () => {
+    try {
+        const res = await axiosinstance.get('/api/districts');
+        return res.data;
+    } catch (error) {
+        console.error("Failed to fetch available districts:", error);
+        return [];
     }
 };

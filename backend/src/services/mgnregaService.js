@@ -12,31 +12,37 @@ const normalizeDistrictName = (name) => {
     return name.replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
 };
 
-export async function fetchDistrictData(districtName) {
+export async function fetchDistrictData(districtName, stateName = "JHARKHAND") {
     const normalizedName = normalizeDistrictName(districtName);
-    const cacheKey = `mgnrega:${normalizedName.toLowerCase()}`;
+    const normalizedState = normalizeDistrictName(stateName);
+    const cacheKey = `mgnrega:${normalizedState.toLowerCase()}:${normalizedName.toLowerCase()}`;
 
     try {
         // Try cache first
         const cache = await getCache(cacheKey);
         if (cache) {
-            console.log(`Serving ${normalizedName} from cache`);
+            console.log(`Serving ${normalizedState}/${normalizedName} from cache`);
             return cache;
         }
     } catch (error) {
         console.log('Cache error (non-fatal):', error.message);
     }
 
-    // Check database
+    // Check database - now using state+district combo
     const record = await prisma.districtData.findUnique({
-        where: { district_name: normalizedName }
+        where: { 
+            state_name_district_name: {
+                state_name: normalizedState,
+                district_name: normalizedName
+            }
+        }
     });
 
     if (record) {
         const lastUpdate = new Date(record.last_updated);
         const isRecent = (Date.now() - lastUpdate.getTime() < 24 * 3600 * 1000);
         if (isRecent) {
-            console.log(`Serving ${districtName} from db`);
+            console.log(`Serving ${normalizedState}/${districtName} from db`);
             try {
                 await setCache(cacheKey, record.data);
             } catch (error) {
@@ -48,12 +54,12 @@ export async function fetchDistrictData(districtName) {
 
     
     try {
-        console.log(`Fetching ${districtName} from API...`);
+        console.log(`Fetching ${normalizedState}/${districtName} from API...`);
         // Manually build query string to ensure spaces are encoded as %20 instead of +
         const queryParams = {
             'api-key': API_KEY,
             'format': 'json',
-            'filters[state_name]': 'JHARKHAND',
+            'filters[state_name]': normalizedState,
             'filters[district_name]': normalizedName,
             'limit': 1
         };
@@ -69,7 +75,7 @@ export async function fetchDistrictData(districtName) {
         const response = await axios.get(requestUrl);
         
         // Log API response structure for debugging
-        console.log(`API response for ${normalizedName}:`, {
+        console.log(`API response for ${normalizedState}/${normalizedName}:`, {
             status: response.status,
             recordCount: response.data?.records?.length,
             hasData: !!response.data?.records?.[0],
@@ -78,12 +84,12 @@ export async function fetchDistrictData(districtName) {
 
         const data = response.data?.records?.[0];
         if (!data) {
-            console.error(`No data returned for ${normalizedName}. Response:`, 
+            console.error(`No data returned for ${normalizedState}/${normalizedName}. Response:`, 
                 JSON.stringify(response.data, null, 2).substring(0, 500) + '...');
             throw new Error("No data from API");
         }
 
-        console.log(`Storing data for ${normalizedName}...`);
+        console.log(`Storing data for ${normalizedState}/${normalizedName}...`);
         
         // Update cache and database
         try {
@@ -94,13 +100,19 @@ export async function fetchDistrictData(districtName) {
 
         const districtCode = data?.district_code ?? data?.district_code?.toString?.() ?? null;
         const upserted = await prisma.districtData.upsert({
-            where: { district_name: normalizedName },
+            where: { 
+                state_name_district_name: {
+                    state_name: normalizedState,
+                    district_name: normalizedName
+                }
+            },
             update: {
                 data: data,
                 last_updated: new Date(),
                 ...(districtCode ? { district_code: districtCode } : {})
             },
             create: {
+                state_name: normalizedState,
                 district_name: normalizedName,
                 data: data,
                 last_updated: new Date(),
@@ -108,23 +120,23 @@ export async function fetchDistrictData(districtName) {
             }
         });
 
-        console.log(`Successfully stored data for ${districtName} (ID: ${upserted.id})`);
+        console.log(`Successfully stored data for ${normalizedState}/${districtName} (ID: ${upserted.id})`);
         return data;
     } catch (err) {
         if (err.response) {
             // API responded with error
-            console.error(`API error for ${districtName}:`, {
+            console.error(`API error for ${normalizedState}/${districtName}:`, {
                 status: err.response.status,
                 statusText: err.response.statusText,
                 data: err.response.data
             });
         } else {
             // Network/other error
-            console.error(`Error fetching ${districtName}:`, err.message);
+            console.error(`Error fetching ${normalizedState}/${districtName}:`, err.message);
         }
         
         if (record) {
-            console.log(`Serving stale data for ${districtName} due to API error`);
+            console.log(`Serving stale data for ${normalizedState}/${districtName} due to API error`);
             return record.data;
         }
         return null;

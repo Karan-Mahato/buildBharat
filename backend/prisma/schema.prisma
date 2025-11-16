@@ -4,15 +4,21 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  url       = env("DIRECT_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model DistrictData {
-  district_name String   @id
-  district_code String?  
-  data          Json
-  last_updated  DateTime @default(now())
+  id              Int     @id @default(autoincrement())
+  state_name      String  @default("Jharkhand")
+  district_name   String
+  district_code   String?
+  data            Json    @default("{}")
+  last_updated    DateTime @default(now()) @updatedAt
+  
+  @@unique([state_name, district_name])
+  @@index([state_name])
+  @@index([district_name])
 }
 
 model SyncLog {

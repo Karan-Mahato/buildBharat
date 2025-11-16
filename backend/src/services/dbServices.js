@@ -1,9 +1,40 @@
 import prisma from '../config/prisma.js'
 
-export async function upsertDistrictData(district_name, data, district_code = null) {
+// ===== New Multi-State Functions =====
+
+export async function getDistrictDataByStateAndDistrict(state_name, district_name) {
+  return prisma.districtData.findUnique({
+    where: {
+      state_name_district_name: {
+        state_name,
+        district_name
+      }
+    }
+  })
+}
+
+export async function getDistrictsByState(state_name) {
+  return prisma.districtData.findMany({
+    where: { state_name },
+    orderBy: { district_name: 'asc' }
+  })
+}
+
+export async function getAllStates() {
+  const states = await prisma.districtData.groupBy({
+    by: ['state_name'],
+    orderBy: { state_name: 'asc' }
+  })
+  return states.map(s => s.state_name)
+}
+
+export async function upsertDistrictData(state_name, district_name, data, district_code = null) {
   return prisma.districtData.upsert({
     where: {
-      district_name
+      state_name_district_name: {
+        state_name,
+        district_name
+      }
     },
     update: {
       data,
@@ -11,6 +42,7 @@ export async function upsertDistrictData(district_name, data, district_code = nu
       ...(district_code ? { district_code } : {})
     },
     create: {
+      state_name,
       district_name,
       data,
       ...(district_code ? { district_code } : {})
@@ -18,9 +50,11 @@ export async function upsertDistrictData(district_name, data, district_code = nu
   })
 }
 
+// ===== Legacy Functions (Backward Compatibility) =====
+
 export async function getDistrictData(district_name = null) {
   if (district_name) {
-    return prisma.districtData.findUnique({
+    return prisma.districtData.findFirst({
       where: { district_name }
     })
   }
